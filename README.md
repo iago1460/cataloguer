@@ -23,6 +23,14 @@ optional arguments:
   --dst DST_PATH        Path to the destination directory.
 ```
 
+## Installation
+
+    virtualenv venv
+    source venv/bin/activate
+    pip3 install -r requirements.txt
+    
+    python3 -m catalogue -h
+
 
 ## Features
 
@@ -31,6 +39,7 @@ optional arguments:
 
 ## TODO list
 
+* Create python package
 * Video support
 * Symlink between folder video and photo
 
