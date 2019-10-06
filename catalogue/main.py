@@ -55,7 +55,7 @@ def main():
         dest='dst_path',
         type=PathType,
         required=False,
-        default=Path('.')
+        default=None
     )
 
     args = parser.parse_args()
@@ -66,21 +66,25 @@ def main():
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, stream=sys.stdout, level=logging_level)
 
     print('Checking for duplicates...')
-    duplicates = get_file_duplicates((args.src_path, args.dst_path))
+    duplicates = get_file_duplicates(list(filter(lambda x: bool(x), (args.src_path, args.dst_path))))
     if duplicates:
         print('The following files are duplicated:')
         for files in duplicates.values():
             print('  * {files}'.format(files=', '.join(files)))
+    else:
+        print('No duplicates found')
 
-    print('{operation} files...'.format(operation=str(args.operation).capitalize()))
-    for path in args.src_path.rglob('**/*'):
-        if is_image(path):
-            created = get_image_creation_date(path)
+    if args.dst_path:
+        print('{operation} files...'.format(operation=str(args.operation).capitalize()))
+        for path in args.src_path.rglob('**/*'):
+            if is_image(path):
+                created = get_image_creation_date(path)
 
-            sub_path = Path('{year}/{month}/{day}'.format(year=created.year, month=created.month, day=created.day))
-            dst_path = args.dst_path.joinpath(sub_path)
-            move_file(path, dst_path, operation=args.operation)
-
+                sub_path = Path('{year}/{month}/{day}'.format(year=created.year, month=created.month, day=created.day))
+                dst_path = args.dst_path.joinpath(sub_path)
+                move_file(path, dst_path, operation=args.operation)
+    else:
+        print('No destination folder provided')
 
 if __name__ == '__main__':
     main()

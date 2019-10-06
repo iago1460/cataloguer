@@ -98,7 +98,7 @@ def get_file_duplicates(paths):
 
             duplicate = hashes_full.get(full_hash)
             if duplicate:
-                duplicates.setdefault(full_hash, []).append(filename)
+                duplicates.setdefault(full_hash, []).extend([duplicate, filename])
             else:
                 hashes_full[full_hash] = filename
     return duplicates
