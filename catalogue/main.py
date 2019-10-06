@@ -71,6 +71,7 @@ def main():
         print('The following files are duplicated:')
         for files in duplicates.values():
             print('  * {files}'.format(files=', '.join(files)))
+        print(f'Found {int(len(duplicates)/2)} duplicates')
     else:
         print('No duplicates found')
 
