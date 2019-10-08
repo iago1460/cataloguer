@@ -4,6 +4,7 @@ import sys
 from argparse import RawTextHelpFormatter
 from pathlib import Path
 
+from catalogue import __version__
 from catalogue.const import Operation
 from catalogue.filesystem import move_file, get_file_duplicates
 from catalogue.metadata import is_image, get_image_creation_date
@@ -27,8 +28,15 @@ def main():
         "python3 -m catalogue --src ./import_folder --dst ./my_catalogue --operation copy --verbose"
     )
     parser.add_argument(
+        '--version',
+        help='Displays version',
+        dest='version',
+        action='store_true',
+        default=False
+    )
+    parser.add_argument(
         '--verbose',
-        help='Makes curl verbose during the operation. Useful for debugging and seeing what is going on "under the hood".',
+        help='Makes verbose during the operation. Useful for debugging and seeing what is going on "under the hood".',
         dest='verbose',
         action='store_true',
         default=False
@@ -47,7 +55,8 @@ def main():
         help="Path to the source directory.",
         dest='src_path',
         type=PathType,
-        required=True
+        required=False,
+        default=Path('.')
     )
     parser.add_argument(
         '--dst',
@@ -59,6 +68,10 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.version:
+        print(f'Version {__version__}')
+        return
 
     logging_level = logging.ERROR
     if args.verbose:
