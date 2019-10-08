@@ -25,7 +25,7 @@ def main():
         description=
         "Organize your photos folder,.\n"
         "Example usage:\n"
-        "python3 -m catalogue --src ./import_folder --dst ./my_catalogue --operation copy --verbose"
+        "catalogue --src ./import_folder --dst ./my_catalogue --operation copy --verbose"
     )
     parser.add_argument(
         '--version',
