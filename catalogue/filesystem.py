@@ -48,27 +48,37 @@ def _get_hash(filename, first_chunk_only=False):
     return hashed
 
 
-def get_file_duplicates(paths):
+def get_files_and_size(path):
+
+    files = set()
     hashes_by_size = {}
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            full_path = os.path.join(dirpath, filename)
+            files.add(full_path)
+            try:
+                # if the target is a symlink (soft one), this will
+                # dereference it - change the value to the actual target file
+                full_path = os.path.realpath(full_path)
+                file_size = os.path.getsize(full_path)
+            except OSError as e:
+                # not accessible (permissions, etc) - pass on
+                logging.warning('Cannot read %s, %s', full_path, e)
+                continue
+
+            hashes_by_size.setdefault(file_size, []).append(full_path)
+    return files, hashes_by_size
+
+
+def get_file_duplicates(*hashes_by_size_list):
     hashes_on_1k = {}
     hashes_full = {}
     duplicates = {}
 
-    for path in paths:
-        for dirpath, dirnames, filenames in os.walk(path):
-            for filename in filenames:
-                full_path = os.path.join(dirpath, filename)
-                try:
-                    # if the target is a symlink (soft one), this will
-                    # dereference it - change the value to the actual target file
-                    full_path = os.path.realpath(full_path)
-                    file_size = os.path.getsize(full_path)
-                except OSError as e:
-                    # not accessible (permissions, etc) - pass on
-                    logging.warning('Cannot read %s, %s', full_path, e)
-                    continue
-
-                hashes_by_size.setdefault(file_size, []).append(full_path)
+    hashes_by_size = {}
+    for hashes in hashes_by_size_list:
+        for file_size, file_paths in hashes.items():
+            hashes_by_size.setdefault(file_size, []).extend(file_paths)
 
     # For all files with the same file size, get their hash on the 1st 1024 bytes
     for __, files in hashes_by_size.items():
@@ -98,7 +108,7 @@ def get_file_duplicates(paths):
 
             duplicate = hashes_full.get(full_hash)
             if duplicate:
-                duplicates.setdefault(full_hash, []).extend([duplicate, filename])
+                duplicates.setdefault(full_hash, [duplicate]).append(filename)
             else:
                 hashes_full[full_hash] = filename
     return duplicates

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from catalogue import __version__
 from catalogue.const import Operation
-from catalogue.filesystem import move_file, get_file_duplicates
+from catalogue.filesystem import move_file, get_file_duplicates, get_files_and_size
 from catalogue.metadata import is_image, get_image_creation_date
 
 FORMAT = '%(asctime)s %(levelname)s : %(message)s'
@@ -79,7 +79,13 @@ def main():
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, stream=sys.stdout, level=logging_level)
 
     print('Checking for duplicates...')
-    duplicates = get_file_duplicates(list(filter(lambda x: bool(x), (args.src_path, args.dst_path))))
+    catalogue_files = set()
+    catalogue_hashes = {}
+    if args.dst_path:
+        catalogue_files, catalogue_hashes = get_files_and_size(args.dst_path)
+
+    src_files, src_hashes = get_files_and_size(args.src_path)
+    duplicates = get_file_duplicates(catalogue_hashes, src_hashes)
     if duplicates:
         print('The following files are duplicated:')
         for files in duplicates.values():
@@ -88,6 +94,7 @@ def main():
     else:
         print('No duplicates found')
 
+    file_collisions = []
     if args.dst_path:
         print('{operation} files...'.format(operation=str(args.operation).capitalize()))
         for path in args.src_path.rglob('**/*'):
@@ -96,9 +103,20 @@ def main():
 
                 sub_path = Path('{year}/{month}/{day}'.format(year=created.year, month=created.month, day=created.day))
                 dst_path = args.dst_path.joinpath(sub_path)
-                move_file(path, dst_path, operation=args.operation)
+                dst_file_path = dst_path.joinpath(path.name)
+                if str(dst_file_path) not in catalogue_files:
+                    move_file(path, dst_path, operation=args.operation)
+                    catalogue_files.add(str(dst_file_path))
+                else:
+                    file_collisions.append((path, dst_file_path))
     else:
         print('No destination folder provided')
+
+    if file_collisions:
+        print('The following files were already present in the catalogue:')
+        for file, catalogue_file in file_collisions:
+            print(f'  * {file} <-> {catalogue_file}')
+
 
 if __name__ == '__main__':
     main()
