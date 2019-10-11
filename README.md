@@ -27,7 +27,7 @@ optional arguments:
 
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.1.zip
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.2.zip
     
     catalogue --help
 
