@@ -2,7 +2,7 @@
 
 Organize automatically your photos by date.
 
-Move/Copy your files to a file system catalogue order by its creation date <year>/<month>/<day>
+Move/Copy your files to a file system catalogue order by its creation date `<year>/<month>/<day>`
 
 
 ```bash
@@ -16,7 +16,8 @@ python3 -m catalogue --src ./import_folder --dst ./my_catalogue --operation copy
 
 optional arguments:
   -h, --help            show this help message and exit
-  --verbose             Makes curl verbose during the operation. Useful for debugging and seeing what is going on "under the hood".
+  --version             Displays version
+  --verbose             Makes verbose during the operation. Useful for debugging and seeing what is going on "under the hood".
   --operation {move,copy,dry-run}
                         Specify how to move files (copy, move or dry-run)
   --src SRC_PATH        Path to the source directory.
@@ -27,19 +28,19 @@ optional arguments:
 
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.2.zip
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.3.zip
     
     catalogue --help
 
 
 ## Features
 
-* Move, Copy or Dry Run modes
+* Move, Copy or Dry Run operation modes
 * Scan for duplicates
 
 ## TODO list
 
-* Create python package
+* Push package to pip
 * Video support
 * Symlink between folder video and photo
 

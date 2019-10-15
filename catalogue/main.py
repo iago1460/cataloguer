@@ -4,6 +4,7 @@ import sys
 from argparse import RawTextHelpFormatter
 from pathlib import Path
 
+from itertools import chain
 from catalogue import __version__
 from catalogue.const import Operation
 from catalogue.filesystem import move_file, get_file_duplicates, get_files_and_size
@@ -85,12 +86,13 @@ def main():
         catalogue_files, catalogue_hashes = get_files_and_size(args.dst_path)
 
     src_files, src_hashes = get_files_and_size(args.src_path)
-    duplicates = get_file_duplicates(catalogue_hashes, src_hashes)
-    if duplicates:
+    hash_duplicates = get_file_duplicates(catalogue_hashes, src_hashes)
+    duplicates = set(chain(*hash_duplicates.values()))
+    if hash_duplicates:
         print('The following files are duplicated:')
-        for files in duplicates.values():
+        for files in hash_duplicates.values():
             print('  * {files}'.format(files=', '.join(files)))
-        print(f'Found {int(len(duplicates)/2)} duplicates')
+        print(f'Found {len(duplicates)} duplicates')
     else:
         print('No duplicates found')
 
@@ -113,9 +115,21 @@ def main():
         print('No destination folder provided')
 
     if file_collisions:
-        print('The following files were already present in the catalogue:')
+        conflicting_name_files = []
+        duplicate_files_already_present = []
         for file, catalogue_file in file_collisions:
-            print(f'  * {file} <-> {catalogue_file}')
+            if str(file) in duplicates:
+                duplicate_files_already_present.append(file)
+            else:
+                conflicting_name_files.append(file)
+        if duplicate_files_already_present:
+            print('The following files were skipped since they are already present in the catalogue:')
+            for file in duplicate_files_already_present:
+                print(f'  * {file}')
+        if conflicting_name_files:
+            print(f'The following files COULD NOT being imported, please RENAME them:')
+            for file in conflicting_name_files:
+                print(f'  * {file}')
 
 
 if __name__ == '__main__':
