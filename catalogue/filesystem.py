@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import shutil
+from itertools import chain
 
 from catalogue.const import Operation
 
@@ -70,15 +71,24 @@ def get_files_and_size(path):
     return files, hashes_by_size
 
 
-def get_file_duplicates(*hashes_by_size_list):
+def get_file_duplicates(src_hash, dst_hash=None, diff=True):
     hashes_on_1k = {}
     hashes_full = {}
     duplicates = {}
 
-    hashes_by_size = {}
-    for hashes in hashes_by_size_list:
-        for file_size, file_paths in hashes.items():
-            hashes_by_size.setdefault(file_size, []).extend(file_paths)
+    def intersect(a, b):
+        return {k: list(chain(a[k], b[k])) for k in a.keys() & b.keys()}
+
+    def union(a, b):
+        return {k: list(chain(a.get(k, []), b.get(k, []))) for k in a.keys() | b.keys()}
+
+    hashes_by_size = src_hash
+    if dst_hash:
+        if diff:
+            hashes_by_size = intersect(src_hash, dst_hash)
+        else:
+            hashes_by_size = union(src_hash, dst_hash)
+
 
     # For all files with the same file size, get their hash on the 1st 1024 bytes
     for __, files in hashes_by_size.items():

@@ -43,6 +43,13 @@ def main():
         default=False
     )
     parser.add_argument(
+        '--fast',
+        help='Avoid scanning folders for duplicates',
+        dest='fast',
+        action='store_true',
+        default=False
+    )
+    parser.add_argument(
         '--operation',
         help="Specify how to move files (copy, move or dry-run)",
         dest='operation',
@@ -79,24 +86,35 @@ def main():
         logging_level = logging.DEBUG
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, stream=sys.stdout, level=logging_level)
 
-    print('Checking for duplicates...')
+    print('Scanning files...')
     catalogue_files = set()
     catalogue_hashes = {}
     if args.dst_path:
         catalogue_files, catalogue_hashes = get_files_and_size(args.dst_path)
+        if not args.fast:
+            catalogue_duplicates = get_file_duplicates(catalogue_hashes).values()
+            if catalogue_duplicates:
+                duplicate_count = sum((len(files) for files in catalogue_duplicates)) - len(catalogue_duplicates)
+                print(f'Your catalogue contains {duplicate_count} duplicates:')
+                for files in catalogue_duplicates:
+                    print('  * {files}'.format(files=', '.join(files)))
 
     src_files, src_hashes = get_files_and_size(args.src_path)
-    hash_duplicates = get_file_duplicates(catalogue_hashes, src_hashes)
-    duplicates = set(chain(*hash_duplicates.values()))
-    if hash_duplicates:
-        print('The following files are duplicated:')
-        for files in hash_duplicates.values():
-            print('  * {files}'.format(files=', '.join(files)))
-        print(f'Found {len(duplicates)} duplicates')
-    else:
-        print('No duplicates found')
+    if not args.fast:
+        src_duplicates = get_file_duplicates(src_hashes).values()
+        if src_duplicates:
+            duplicate_count = sum((len(files) for files in src_duplicates)) - len(src_duplicates)
+            print(f'The following {duplicate_count} files to import are duplicated:')
+            for files in src_duplicates:
+                print('  * {files}'.format(files=', '.join(files)))
 
-    file_collisions = []
+    duplicates_across = set()
+    if not args.fast:
+        duplicates_across = set(chain(*get_file_duplicates(catalogue_hashes, src_hashes, diff=True).values()))
+
+    skipped_files = []
+    conflicting_name_files = []
+    imported_files = []
     if args.dst_path:
         print('{operation} files...'.format(operation=str(args.operation).capitalize()))
         for path in args.src_path.rglob('**/*'):
@@ -106,30 +124,26 @@ def main():
                 sub_path = Path('{year}/{month}/{day}'.format(year=created.year, month=created.month, day=created.day))
                 dst_path = args.dst_path.joinpath(sub_path)
                 dst_file_path = dst_path.joinpath(path.name)
-                if str(dst_file_path) not in catalogue_files:
+                if str(path) in duplicates_across:
+                    skipped_files.append(path)
+                elif str(dst_file_path) not in catalogue_files:
                     move_file(path, dst_path, operation=args.operation)
                     catalogue_files.add(str(dst_file_path))
+                    imported_files.append(path)
                 else:
-                    file_collisions.append((path, dst_file_path))
+                    conflicting_name_files.append(path)
     else:
         print('No destination folder provided')
 
-    if file_collisions:
-        conflicting_name_files = []
-        duplicate_files_already_present = []
-        for file, catalogue_file in file_collisions:
-            if str(file) in duplicates:
-                duplicate_files_already_present.append(file)
-            else:
-                conflicting_name_files.append(file)
-        if duplicate_files_already_present:
-            print('The following files were skipped since they are already present in the catalogue:')
-            for file in duplicate_files_already_present:
-                print(f'  * {file}')
-        if conflicting_name_files:
-            print(f'The following files COULD NOT being imported, please RENAME them:')
-            for file in conflicting_name_files:
-                print(f'  * {file}')
+    if skipped_files:
+        print(f'{len(skipped_files)} files were skipped since they are already present in the catalogue.')
+        # for file in skipped_files:
+        #     print(f'  * {file}')
+    print(f'{len(imported_files)} files imported.')
+    if conflicting_name_files:
+        print(f'{len(conflicting_name_files)} files COULD NOT being imported:')
+        for file in conflicting_name_files:
+            print(f'  * {file}')
 
 
 if __name__ == '__main__':
