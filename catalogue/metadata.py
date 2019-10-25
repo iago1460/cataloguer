@@ -17,15 +17,19 @@ def get_exif(image):
     }
 
 
-def _normalize_datetime_format(exif_dt):
-    if type(exif_dt) in (tuple, list):
-        if len(exif_dt) == 1:
-            exif_dt = exif_dt[0]
+def _normalize_datetime_format(exif_dt_field):
+    exif_dt = exif_dt_field
+    if type(exif_dt_field) in (tuple, list):
+        if len(exif_dt_field) == 1:
+            exif_dt = exif_dt_field[0]
     try:
         # format YYYY:MM:DD hh:mm:ss is not parsed correctly by dateutil
         return datetime.datetime.strptime(exif_dt, '%Y:%m:%d %H:%M:%S').isoformat()
     except ValueError:
         return exif_dt
+    except TypeError:
+        logging.info(f'Cannot parse "{exif_dt}", {exif_dt_field}')
+        return None
 
 
 def extract_created_date_from_exif(exif):
@@ -38,19 +42,33 @@ def extract_created_date_from_exif(exif):
     return None
 
 
-def is_image(path):
-    if path.is_file():
-        try:
-            image = Image.open(path)
-        except IOError:
-            return False
-        else:
-            logging.debug(f'Format: {image.format}')
-            return True
-    return False
+# def is_image(path):
+#     try:
+#         image = Image.open(path)
+#     except IOError:
+#         return False
+#     else:
+#         logging.debug(f'Format: {image.format}')
+#         return True
+
+
+def is_image(mime_type):
+    return get_media_type(mime_type) == 'image'
+
+
+def get_media_type(mime_type):
+    return mime_type.split('/')[0]
 
 
 def get_image_creation_date(path):
-    image = Image.open(path)
-    metadata = get_exif(image)
+    try:
+        image = Image.open(path)
+    except IOError as e:
+        logging.warning(e)
+        return None
+    try:
+        metadata = get_exif(image)
+    except AttributeError:
+        logging.info(f'Cannot get metadata for {path}')
+        return None
     return extract_created_date_from_exif(metadata)

@@ -1,18 +1,20 @@
 import argparse
 import logging
 import sys
+import magic
+import progressbar
 from argparse import RawTextHelpFormatter
 from pathlib import Path
 
 from itertools import chain
 from catalogue import __version__
 from catalogue.const import Operation
-from catalogue.filesystem import move_file, get_file_duplicates, get_files_and_size
-from catalogue.metadata import is_image, get_image_creation_date
+from catalogue.filesystem import process_file, get_file_duplicates, get_files_and_size, get_filename_extension
+from catalogue.metadata import is_image, get_image_creation_date, get_media_type
 
+progressbar.streams.wrap_stderr()
 FORMAT = '%(asctime)s %(levelname)s : %(message)s'
 DATEFMT = '%Y-%m-%d %H:%M:%S'
-
 
 def PathType(path):
     if path:
@@ -74,6 +76,16 @@ def main():
         required=False,
         default=None
     )
+    parser.add_argument(
+        '--format',
+        help=
+        "Customize how to structure the files in your catalogue. e.g: '%%Y/%%m/%%d/{filename}'\n"
+        "All python strftime format codes are supported as well as {filename}, {filename_extension}, {media_type}, {mime_type}",
+        dest='path_format',
+        type=str,
+        required=False,
+        default='%Y/%m/%d/{filename}'
+    )
 
     args = parser.parse_args()
 
@@ -81,7 +93,7 @@ def main():
         print(f'Version {__version__}')
         return
 
-    logging_level = logging.ERROR
+    logging_level = logging.WARNING
     if args.verbose:
         logging_level = logging.DEBUG
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, stream=sys.stdout, level=logging_level)
@@ -97,7 +109,7 @@ def main():
                 duplicate_count = sum((len(files) for files in catalogue_duplicates)) - len(catalogue_duplicates)
                 print(f'Your catalogue contains {duplicate_count} duplicates:')
                 for files in catalogue_duplicates:
-                    print('  * {files}'.format(files=', '.join(files)))
+                    print('  * {files}'.format(files=', '.join(map(str, files))))
 
     src_files, src_hashes = get_files_and_size(args.src_path)
     if not args.fast:
@@ -106,7 +118,7 @@ def main():
             duplicate_count = sum((len(files) for files in src_duplicates)) - len(src_duplicates)
             print(f'The following {duplicate_count} files to import are duplicated:')
             for files in src_duplicates:
-                print('  * {files}'.format(files=', '.join(files)))
+                print('  * {files}'.format(files=', '.join(map(str, files))))
 
     duplicates_across = set()
     if not args.fast:
@@ -117,31 +129,46 @@ def main():
     imported_files = []
     if args.dst_path:
         print('{operation} files...'.format(operation=str(args.operation).capitalize()))
-        for path in args.src_path.rglob('**/*'):
-            if is_image(path):
-                created = get_image_creation_date(path)
+        for path in progressbar.progressbar(src_files, redirect_stdout=True):
+            if path.is_file():
+                mime_type = magic.from_file(str(path), mime=True)
+                logging.debug(f'{mime_type} - {path}')
+                if is_image(mime_type):
+                    media_type = get_media_type(mime_type)
+                    created = get_image_creation_date(path)
+                    if not created:
+                        logging.warning(f'Could not get creation date for {path}')
+                        conflicting_name_files.append(path)
+                        continue
 
-                sub_path = Path('{year}/{month}/{day}'.format(year=created.year, month=created.month, day=created.day))
-                dst_path = args.dst_path.joinpath(sub_path)
-                dst_file_path = dst_path.joinpath(path.name)
-                if str(path) in duplicates_across:
-                    skipped_files.append(path)
-                elif str(dst_file_path) not in catalogue_files:
-                    move_file(path, dst_path, operation=args.operation)
-                    catalogue_files.add(str(dst_file_path))
-                    imported_files.append(path)
-                else:
-                    conflicting_name_files.append(path)
+                    filename_extension = get_filename_extension(path.name)
+                    strftime_format = args.path_format.format(
+                        filename=path.name,
+                        filename_extension=filename_extension,
+                        mime_type=mime_type,
+                        media_type=media_type,
+                    )
+                    sub_path = Path(created.strftime(strftime_format))
+                    dst_file_path = args.dst_path.joinpath(sub_path)
+
+                    if path in duplicates_across:
+                        skipped_files.append(path)
+                    elif dst_file_path not in catalogue_files:
+                        process_file(path, dst_file_path, operation=args.operation)
+                        catalogue_files.add(dst_file_path)
+                        imported_files.append(path)
+                    else:
+                        conflicting_name_files.append(path)
     else:
         print('No destination folder provided')
 
     if skipped_files:
-        print(f'{len(skipped_files)} files were skipped since they are already present in the catalogue.')
+        print(f'{len(skipped_files)} files were skipped, since they were already present in the catalogue.')
         # for file in skipped_files:
         #     print(f'  * {file}')
     print(f'{len(imported_files)} files imported.')
     if conflicting_name_files:
-        print(f'{len(conflicting_name_files)} files COULD NOT being imported:')
+        print(f'{len(conflicting_name_files)} files COULD NOT be imported:')
         for file in conflicting_name_files:
             print(f'  * {file}')
 

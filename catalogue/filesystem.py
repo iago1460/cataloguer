@@ -3,26 +3,34 @@ import logging
 import os
 import shutil
 from itertools import chain
+from pathlib import Path
 
 from catalogue.const import Operation
 
 
-def _move(src, dst, operation):
-    logging.info(f'{src} -> {dst}/{src.name}')
+def get_filename_extension(name):
+    name_split = name.split('.')
+    if len(name_split) > 1:
+        return f'.{name_split[-1]}'
+    return ''
+
+
+def process_file(file_path, dst_file_path, operation):
+    if not dst_file_path.parent.exists():
+        logging.info(f'Creating folder "{dst_file_path.parent}"')
+        if operation != Operation.DRY_RUN:
+            os.makedirs(dst_file_path.parent)
+    _process(file_path, dst_file_path, operation)
+
+
+def _process(src, dst, operation):
+    logging.info(f'{src} -> {dst}')
     if operation == Operation.DRY_RUN:
-        print(f'dry-run: {src} -> {dst}/{src.name}')
+        print(f'dry-run: {src} -> {dst}')
     elif operation == Operation.MOVE:
-        shutil.move(str(src), dst.joinpath(src.name))
+        shutil.move(str(src), str(dst))
     elif operation == Operation.COPY:
         shutil.copy2(src, dst)
-
-
-def move_file(file_path, dst_folder, operation):
-    if not dst_folder.exists():
-        logging.info(f'Creating folder "{dst_folder}"')
-        if operation != Operation.DRY_RUN:
-            os.makedirs(dst_folder)
-    _move(file_path, dst_folder, operation)
 
 
 def _chunk_reader(fobj, chunk_size=1024):
@@ -56,17 +64,17 @@ def get_files_and_size(path):
     for dirpath, dirnames, filenames in os.walk(path):
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
-            files.add(full_path)
             try:
                 # if the target is a symlink (soft one), this will
                 # dereference it - change the value to the actual target file
-                full_path = os.path.realpath(full_path)
+                full_path = Path(os.path.realpath(full_path))
                 file_size = os.path.getsize(full_path)
             except OSError as e:
                 # not accessible (permissions, etc) - pass on
                 logging.warning('Cannot read %s, %s', full_path, e)
                 continue
 
+            files.add(full_path)
             hashes_by_size.setdefault(file_size, []).append(full_path)
     return files, hashes_by_size
 
