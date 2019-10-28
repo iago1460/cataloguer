@@ -15,6 +15,8 @@ from catalogue.metadata import is_image, get_image_creation_date, get_media_type
 progressbar.streams.wrap_stderr()
 FORMAT = '%(asctime)s %(levelname)s : %(message)s'
 DATEFMT = '%Y-%m-%d %H:%M:%S'
+UNKNOWN_FOLDER_NAME = 'unknown'
+
 
 def PathType(path):
     if path:
@@ -125,6 +127,7 @@ def main():
         duplicates_across = set(chain(*get_file_duplicates(catalogue_hashes, src_hashes, diff=True).values()))
 
     skipped_files = []
+    missing_creation_date_files = []
     conflicting_name_files = []
     imported_files = []
     if args.dst_path:
@@ -138,7 +141,18 @@ def main():
                     created = get_image_creation_date(path)
                     if not created:
                         logging.warning(f'Could not get creation date for {path}')
-                        conflicting_name_files.append(path)
+
+                        sub_path = Path(path.name)
+                        dst_file_path = args.dst_path.joinpath(UNKNOWN_FOLDER_NAME).joinpath(sub_path)
+                        if path in duplicates_across:
+                            skipped_files.append(path)
+                        elif dst_file_path not in catalogue_files:
+                            process_file(path, dst_file_path, operation=args.operation)
+                            catalogue_files.add(dst_file_path)
+                            missing_creation_date_files.append(path)
+                        else:
+                            conflicting_name_files.append(path)
+                        
                         continue
 
                     filename_extension = get_filename_extension(path.name)
@@ -166,7 +180,11 @@ def main():
         print(f'{len(skipped_files)} files were skipped, since they were already present in the catalogue.')
         # for file in skipped_files:
         #     print(f'  * {file}')
-    print(f'{len(imported_files)} files imported.')
+    if missing_creation_date_files:
+        print(f'{len(missing_creation_date_files)} files WITHOUT METADATA were imported into the "{UNKNOWN_FOLDER_NAME}" folder:')
+        for file in missing_creation_date_files:
+            print(f'  * {file}')
+    print(f'{len(imported_files) + len(missing_creation_date_files)} files imported.')
     if conflicting_name_files:
         print(f'{len(conflicting_name_files)} files COULD NOT be imported:')
         for file in conflicting_name_files:
