@@ -1,5 +1,6 @@
 import datetime
 import logging
+import re
 
 import PIL.ExifTags
 import dateutil.parser
@@ -38,7 +39,10 @@ def extract_created_date_from_exif(exif):
     created_data = _normalize_datetime_format(created_data)
 
     if created_data:
-        return dateutil.parser.parse(created_data)
+        try:
+            return dateutil.parser.parse(created_data)
+        except ValueError as e:
+            logging.error(e)
     return None
 
 
@@ -56,8 +60,32 @@ def is_image(mime_type):
     return get_media_type(mime_type) == 'image'
 
 
+def is_video(mime_type):
+    return get_media_type(mime_type) == 'video'
+
+
 def get_media_type(mime_type):
     return mime_type.split('/')[0]
+
+
+def get_creation_date(path, mime_type):
+    creation_date = None
+    if is_image(mime_type):
+        creation_date = get_image_creation_date(path)
+    if not creation_date:
+        creation_date = get_path_creation_date(path)
+    return creation_date
+
+
+def get_path_creation_date(path):
+    match = re.search(r"/(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})", str(path))
+    if match:
+        year, month, day = match.groups()
+        try:
+            return datetime.datetime(year=int(year), month=int(month), day=int(day))
+        except ValueError:
+            return None
+    return None
 
 
 def get_image_creation_date(path):

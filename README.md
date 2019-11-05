@@ -1,6 +1,6 @@
 # Photo cataloguer
 
-Organize automatically your photos by date.
+Organize automatically your media files.
 
 Move or copy your files according to your preferred format, using any combination of:
     * Exif Creation date
@@ -24,9 +24,10 @@ To use `catalogue --src input --dst output --operation copy --format %Y/%m/%d/{f
 
 ```bash
 $ catalogue --help
-usage: catalogue [-h] [--version] [--verbose] [--fast]
+usage: catalogue [-h] [--version] [--verbose]
                  [--operation {move,copy,dry-run}] [--src SRC_PATH]
-                 [--dst DST_PATH] [--format PATH_FORMAT]
+                 [--dst DST_PATH] [--unknown-folder UNKNOWN_FOLDER]
+                 [--format PATH_FORMAT]
 
 Organize your photos folder,.
 Example usage:
@@ -36,21 +37,21 @@ optional arguments:
   -h, --help            show this help message and exit
   --version             Displays version
   --verbose             Makes verbose during the operation. Useful for debugging and seeing what is going on "under the hood".
-  --fast                Avoid scanning folders for duplicates
   --operation {move,copy,dry-run}
                         Specify how to move files (copy, move or dry-run)
   --src SRC_PATH        Path to the source directory.
   --dst DST_PATH        Path to the destination directory.
+  --unknown-folder UNKNOWN_FOLDER
+                        If provided will be used for media without creation date
   --format PATH_FORMAT  Customize how to structure the files in your catalogue. e.g: '%Y/%m/%d/{filename}'
                         All python strftime format codes are supported as well as {filename}, {filename_extension}, {media_type}, {mime_type}
-
 ```
 
 ## Installation
 
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.5.zip
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.7.zip
     
     catalogue --help
 

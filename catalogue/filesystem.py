@@ -5,6 +5,8 @@ import shutil
 from itertools import chain
 from pathlib import Path
 
+import progressbar
+
 from catalogue.const import Operation
 
 
@@ -28,7 +30,7 @@ def _process(src, dst, operation):
     if operation == Operation.DRY_RUN:
         print(f'dry-run: {src} -> {dst}')
     elif operation == Operation.MOVE:
-        shutil.move(str(src), str(dst))
+        shutil.move(src, dst)
     elif operation == Operation.COPY:
         shutil.copy2(src, dst)
 
@@ -99,29 +101,31 @@ def get_file_duplicates(src_hash, dst_hash=None, diff=True):
 
 
     # For all files with the same file size, get their hash on the 1st 1024 bytes
-    for __, files in hashes_by_size.items():
+    for __, files in  progressbar.progressbar(hashes_by_size.items(), redirect_stdout=True):
         if len(files) < 2:
             continue  # this file size is unique, no need to spend cpy cycles on it
 
         for filename in files:
             try:
                 small_hash = _get_hash(filename, first_chunk_only=True)
-            except (OSError,):
+            except OSError as e:
                 # the file access might've changed till the exec point got here
+                logging.warning('Cannot read %s, %s', filename, e)
                 continue
 
             hashes_on_1k.setdefault(small_hash, []).append(filename)
 
     # For all files with the hash on the 1st 1024 bytes, get their hash on the full file - collisions will be duplicates
-    for __, files in hashes_on_1k.items():
+    for __, files in progressbar.progressbar(hashes_on_1k.items(), redirect_stdout=True):
         if len(files) < 2:
             continue  # this hash of fist 1k file bytes is unique, no need to spend cpy cycles on it
 
         for filename in files:
             try:
                 full_hash = _get_hash(filename, first_chunk_only=False)
-            except (OSError,):
+            except OSError as e:
                 # the file access might've changed till the exec point got here
+                logging.warning('Cannot read %s, %s', filename, e)
                 continue
 
             duplicate = hashes_full.get(full_hash)
