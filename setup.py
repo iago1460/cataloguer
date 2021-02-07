@@ -17,8 +17,11 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 
 def load_requirements(filename):
-    reqs = parse_requirements(filename, session="setup")
-    return [str(ir.req) for ir in reqs]
+    reqs = list(parse_requirements(filename, session="setup"))
+    try:
+        return [str(ir.req) for ir in reqs]
+    except AttributeError:
+        return [str(ir.requirement) for ir in reqs]
 
 
 setup(
