@@ -42,6 +42,13 @@ def extract_created_date_from_exif(exif):
         try:
             return dateutil.parser.parse(created_data)
         except ValueError as e:
+            if e.args[0] == 'Unknown string format: %s':
+                unknown_date = e.args[1]
+                logging.info(f'Attempting to parse unknown date {unknown_date}')
+                match = re.search(r'(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})', unknown_date)
+                if match:
+                    year, month, day = match.groups()
+                    return datetime.datetime(year=int(year), month=int(month), day=int(day))
             logging.error(e)
     return None
 
