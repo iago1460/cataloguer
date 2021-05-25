@@ -6,6 +6,7 @@ import os
 import shutil
 from itertools import chain
 from pathlib import PurePath, Path
+from contextlib import suppress
 from catalogue.metadata import get_image_creation_date, get_path_creation_date
 
 from datetime import datetime, timezone, timedelta
@@ -23,7 +24,8 @@ class Observable:
         self._observers.add(observer)
 
     def unsubscribe(self, observer):
-        self._observers.remove(observer)
+        with suppress(ValueError):
+            self._observers.remove(observer)
 
     def notify(self, *args):
         for observer in self._observers:
@@ -212,10 +214,14 @@ class Catalogue:
             del self._files_by_path[file.path]
             if not new_value.is_relative_to(self.root_path):
                 file.unsubscribe(self)
-                self.files.remove(file)
-                self._files_by_size.setdefault(file.size, []).remove(file)
-                self._files_by_short_hash.setdefault(file._short_hash, []).remove(file)
-                self._files_by_hash.setdefault(file._hash, []).remove(file)
+                with suppress(ValueError):
+                    self.files.remove(file)
+                with suppress(ValueError):
+                    self._files_by_size.setdefault(file.size, []).remove(file)
+                with suppress(ValueError):
+                    self._files_by_short_hash.setdefault(file._short_hash, []).remove(file)
+                with suppress(ValueError):
+                    self._files_by_hash.setdefault(file._hash, []).remove(file)
                 return
             self._files_by_path[new_value] = file
         elif field == "short_hash":

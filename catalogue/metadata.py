@@ -10,7 +10,7 @@ from PIL.TiffTags import TAGS
 
 def _get_exif(image):
     if image.format == "TIFF":
-        return {TAGS[key]: image.tag[key] for key in image.tag.keys()}
+        return {TAGS.get(key): image.tag[key] for key in image.tag.keys()}
     return {
         PIL.ExifTags.TAGS[k]: v
         for k, v in image._getexif().items()
