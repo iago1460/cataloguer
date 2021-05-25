@@ -54,24 +54,21 @@ optional arguments:
 
 ## Installation
 
-The easier way to run this project is using docker. Unfortunately you will need to build your own image for now: 
+The easier way to run this project is using docker: 
 
 
 ### Using docker
-    
-    docker build -t catalogue:latest -f docker/Dockerfile .
-    
-    
+
 Run example; notice `source` and `my_catalogue` need to be replace with your destinations:
 
-    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output catalogue:latest --src /input --dst /output --operation copy
+    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output iago1460/catalogue:1.1 --src /input --dst /output --operation copy
 
 
 ### In a virtual environment
 
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.0.0.zip
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.1.zip
     catalogue --help
 
 
@@ -108,5 +105,4 @@ If `operation` is not specified it will not affect any files, it's always a good
 
 * Video support
 * Push package to pip
-* Publish Docker
 
