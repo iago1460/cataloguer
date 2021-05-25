@@ -1,4 +1,4 @@
-# Photo cataloguer
+# Media cataloguer
 
 Organize automatically your media files.
 
@@ -43,27 +43,70 @@ optional arguments:
   --dst DST_PATH        Path to the destination directory.
   --unknown-folder UNKNOWN_FOLDER
                         If provided will be used for media without creation date
-  --format PATH_FORMAT  Customize how to structure the files in your catalogue. e.g: '%Y/%m/%d/{filename}'
-                        All python strftime format codes are supported as well as {filename}, {filename_extension}, {media_type}, {mime_type}
+                        It accepts same options as the format flag, strftime format will refer to current time
+  --format PATH_FORMAT  Customize how to structure the files in your catalogue. e.g: '%Y/%m/%d/{filename}
+                        All python strftime format codes are supported as well as {filename}, {basename}, {filename_extension}, {media_type}
 ```
+
+## Requirements
+- Python 3.9 or higher
+
 
 ## Installation
 
+The easier way to run this project is using docker. Unfortunately you will need to build your own image for now: 
+
+
+### Using docker
+    
+    docker build -t catalogue:latest -f docker/Dockerfile .
+    
+    
+Run example; notice `source` and `my_catalogue` need to be replace with your destinations:
+
+    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output catalogue:latest --src /input --dst /output --operation copy
+
+
+### In a virtual environment
+
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/0.9.9.zip
-    
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.0.0.zip
     catalogue --help
+
+
+## Practical examples
+
+Copy media files into a catalogue folder structured by year, month and day number:
+
+    catalogue --src source --dst my_catalogue --format %Y/%m/%d/{filename} --operation copy
+
+
+Copy files like before but also copy files with unknown date to `wtf` folder with the current date:
+
+    catalogue --src ./source --dst ./my_catalogue --format %Y/%m/%d/{filename} --unknown-folder ./my_catalogue/wtf/%Y_%m_%d/{filename} --operation copy
+
+
+Detect duplicates in a given folder and list debugging data:
+
+    catalogue --src ./source --verbose
+
+
+If `operation` is not specified it will not affect any files, it's always a good idea to run it before hand.
 
 
 ## Features
 
 * Move, Copy or Dry Run operation modes
-* Scan for duplicates
+* Obscure Creation date detection
+* Custom folder structure definition
+* Duplication detection
+* Respect contents on destination folder
+* Fast duplication detection
 
 ## TODO list
 
-* Push package to pip
 * Video support
-* Symlink between folder video and photo
+* Push package to pip
+* Publish Docker
 

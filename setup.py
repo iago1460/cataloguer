@@ -48,5 +48,5 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     install_requires=load_requirements('requirements.txt'),
-    python_requires='>=3.7',
+    python_requires='>=3.9',
 )
