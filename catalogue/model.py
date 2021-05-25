@@ -28,7 +28,7 @@ class Observable:
             self._observers.remove(observer)
 
     def notify(self, *args):
-        for observer in self._observers:
+        for observer in list(self._observers):
             observer.notify(self, *args)
 
 
