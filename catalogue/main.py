@@ -203,8 +203,10 @@ def main():
                         file, args.operation, dst_catalogue, dst_file_path
                     )
                     imported_files.append(processed_file)
-        logging.info("Saving catalogue...")
-        dst_catalogue.save_db()
+
+        if args.operation != Operation.DRY_RUN:  # shouldn't save if dry run (data is messed up too)
+            logging.info("Saving catalogue...")
+            dst_catalogue.save_db()
 
     logging.info("Report:")
     logging.info(f"{len(imported_files)} files imported.")
@@ -231,12 +233,9 @@ def process_file(file, operation, dst_catalogue, dst_file_path):
         dst_file_path = dst_catalogue.find_new_path(dst_file_path)
 
     if operation == Operation.DRY_RUN:
+        print(f"dry-run: {file.path} -> {dst_file_path}")
         file.path = dst_file_path
-        dst_catalogue.add_file(file)
-        if path_available:
-            logging.info(f"dry-run: {file.path} -> {dst_file_path}")
-        else:
-            logging.warning(f"dry-run: {file.path} -> {dst_file_path}")
+        dst_catalogue.add_file(file)  # needed so path_available is more accurate
         return None
 
     if operation == Operation.COPY:
@@ -244,7 +243,7 @@ def process_file(file, operation, dst_catalogue, dst_file_path):
         dst_catalogue.add_file(new_file)
         return new_file
     elif operation == Operation.MOVE:
-        file.move_file(dst_catalogue)
+        file.move_file(dst_file_path)
         dst_catalogue.add_file(file)
         return file
 
