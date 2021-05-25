@@ -3,22 +3,10 @@
 Organize automatically your media files.
 
 Move or copy your files according to your preferred format, using any combination of:
-    * Exif Creation date
-    * MIME type
-    * Filename
-    * Filename extension
-
-### Example: 
-
-Copy the files to a given directory renaming these by its creation date
-```
-To use `catalogue --src input --dst output --operation copy --format %Y-%m-%dT%H:%M:%S{filename_extension}`
-```
-
-Copy the files creating folders depending of its creation date keeping the original filename
-```
-To use `catalogue --src input --dst output --operation copy --format %Y/%m/%d/{filename}`
-```
+* Exif Creation date
+* MIME type
+* Filename
+* Filename extension
 
 ### Usage
 
@@ -49,7 +37,7 @@ optional arguments:
 ```
 
 ## Requirements
-- Python 3.9 or higher
+- Python 3.9 or Docker
 
 
 ## Installation
@@ -74,12 +62,12 @@ Run example; notice `source` and `my_catalogue` need to be replace with your des
 
 ## Practical examples
 
-Copy media files into a catalogue folder structured by year, month and day number:
+Copy the files creating folders depending on its creation date structured by year, month and day number:
 
     catalogue --src source --dst my_catalogue --format %Y/%m/%d/{filename} --operation copy
 
 
-Copy files like before but also copy files with unknown date to `wtf` folder with the current date:
+Copy files like before but also copies files with unknown creation dates to `wtf` folder with the current date:
 
     catalogue --src ./source --dst ./my_catalogue --format %Y/%m/%d/{filename} --unknown-folder ./my_catalogue/wtf/%Y_%m_%d/{filename} --operation copy
 
