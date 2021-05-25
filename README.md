@@ -49,14 +49,14 @@ The easier way to run this project is using docker:
 
 Run example; notice `source` and `my_catalogue` need to be replace with your destinations:
 
-    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output iago1460/catalogue:1.2 --src /input --dst /output --operation copy
+    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output iago1460/catalogue:1.2.1 --src /input --dst /output --operation copy
 
 
 ### In a virtual environment
 
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.2.zip
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.2.1.zip
     catalogue --help
 
 
