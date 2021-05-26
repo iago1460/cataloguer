@@ -173,8 +173,9 @@ class Catalogue:
                     for file_data in db_data["files"]
                 ]
                 return cls(path, files=files, last_update=last_update)
-            logging.debug("Database seems outdated, reverting to scan...")
+            logging.debug("Database seems outdated, reverting to scan.")
 
+        logging.debug(f"Database not found, scanning {path}...")
         return cls._generate_catalogue_from_scan(path)
 
     @classmethod

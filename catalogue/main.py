@@ -97,7 +97,7 @@ def main():
     start_dt = datetime.now()
 
     if args.version:
-        print(f"Version {__version__}")
+        logging.info(f"Version {__version__}")
         return
 
     logging_level = logging.INFO
@@ -107,23 +107,23 @@ def main():
         format=FORMAT, datefmt=DATEFMT, stream=sys.stdout, level=logging_level
     )
 
-    print("Scanning files...")
+    logging.info("Scanning files...")
     src_catalogue = Catalogue.load(args.src_path)
     dst_catalogue = None
     if args.dst_path:
         dst_catalogue = Catalogue.load(args.dst_path)
 
-    print("Checking duplicates...")
+    logging.info("Checking duplicates...")
 
     duplicated_files_list = []
     if dst_catalogue is not None:
         duplicated_files_list = src_catalogue.detect_duplicates_with(dst_catalogue)
 
     if duplicated_files_list:
-        print(f"Ignoring some duplicates files which are already present")
+        logging.info(f"Ignoring some duplicates files which are already present")
         if args.verbose:
             for files_list in duplicated_files_list:
-                print(
+                logging.info(
                     "  * {files}".format(
                         files=", ".join(sorted(map(escape, files_list)))
                     )
@@ -135,11 +135,11 @@ def main():
         duplicate_count = sum(
             (len(files) for files in duplicated_list_of_files_to_import)
         )
-        print(
+        logging.info(
             f"Detected {duplicate_count} duplicate files to import, will import just one copy:"
         )
         for files_list in duplicated_list_of_files_to_import:
-            print(
+            logging.info(
                 "  * {files}".format(files=", ".join(sorted(map(escape, files_list))))
             )
         # Remove each first file from the list so it gets imported
@@ -163,37 +163,27 @@ def main():
         logging.info(f"Processing {len(src_catalogue.files)} files:")
         files = src_catalogue.files
         for file in progressbar.progressbar(files, redirect_stdout=True):
-            if file.is_media_type():
-                if (
-                    file in duplicated_files
-                    or file in duplicated_list_of_files_to_import
-                ):
-                    logging.debug(f"Skipping duplicated file {file.path}")
-                    continue
-                created = file.get_creation_date()
-                parent_folder = keep_parent_folder(file.path)
-                media_type = file.get_media_type()
-                if not created:
-                    logging.warning(f"Could not get creation date for {file.path}")
-                    if args.unknown_folder:
-                        new_filename = generate_filename(
-                            file,
-                            args.unknown_folder,
-                            dt=start_dt,
-                            parent_folder=parent_folder,
-                            media_type=media_type,
-                        )
-                        dst_file_path = args.dst_path.joinpath(new_filename)
+            media_type = file.get_media_type()
+            if not file.is_media_type():
+                logging.debug(f"Skipping '{media_type}' file {file.path}")
+                continue
 
-                        processed_file = process_file(
-                            file, args.operation, dst_catalogue, dst_file_path
-                        )
-                        imported_files.append(processed_file)
-                else:
+            if (
+                file in duplicated_files
+                or file in duplicated_list_of_files_to_import
+            ):
+                logging.debug(f"Skipping duplicated file {file.path}")
+                continue
+
+            created = file.get_creation_date()
+            parent_folder = keep_parent_folder(file.path)
+            if not created:
+                logging.warning(f"Could not get creation date for {file.path}")
+                if args.unknown_folder:
                     new_filename = generate_filename(
                         file,
-                        args.path_format,
-                        dt=created,
+                        args.unknown_folder,
+                        dt=start_dt,
                         parent_folder=parent_folder,
                         media_type=media_type,
                     )
@@ -203,12 +193,27 @@ def main():
                         file, args.operation, dst_catalogue, dst_file_path
                     )
                     imported_files.append(processed_file)
+            else:
+                new_filename = generate_filename(
+                    file,
+                    args.path_format,
+                    dt=created,
+                    parent_folder=parent_folder,
+                    media_type=media_type,
+                )
+                dst_file_path = args.dst_path.joinpath(new_filename)
+
+                processed_file = process_file(
+                    file, args.operation, dst_catalogue, dst_file_path
+                )
+                imported_files.append(processed_file)
 
         if args.operation != Operation.DRY_RUN:  # shouldn't save if dry run (data is messed up too)
             logging.info("Saving catalogue...")
             dst_catalogue.save_db()
 
     logging.info("Report:")
+    imported_files = list(filter(None, imported_files))
     logging.info(f"{len(imported_files)} files imported.")
     if args.verbose:
         for file in imported_files:
@@ -233,7 +238,7 @@ def process_file(file, operation, dst_catalogue, dst_file_path):
         dst_file_path = dst_catalogue.find_new_path(dst_file_path)
 
     if operation == Operation.DRY_RUN:
-        print(f"dry-run: {file.path} -> {dst_file_path}")
+        logging.info(f"dry-run: {file.path} -> {dst_file_path}")
         file.path = dst_file_path
         dst_catalogue.add_file(file)  # needed so path_available is more accurate
         return None
