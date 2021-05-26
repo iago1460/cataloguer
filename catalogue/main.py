@@ -147,9 +147,10 @@ def main():
             chain(*[files[1:] for files in duplicated_list_of_files_to_import])
         )
 
+    files = src_catalogue.files
     if not dst_catalogue:
-        logging.info(f"Detected {len(src_catalogue.files)} files:")
-        for file in src_catalogue.files:
+        logging.info(f"Detected {len(files)} files:")
+        for file in files:
             created = file.get_creation_date()
             if not file.is_media_type():
                 logging.debug(f"Ignoring {file.get_media_type()} file {file.path} ")
@@ -160,8 +161,7 @@ def main():
 
     imported_files = []
     if dst_catalogue:
-        logging.info(f"Processing {len(src_catalogue.files)} files:")
-        files = src_catalogue.files
+        logging.info(f"Processing {len(files)} files:")
         for file in progressbar.progressbar(files, redirect_stdout=True):
             media_type = file.get_media_type()
             if not file.is_media_type():

@@ -139,15 +139,19 @@ DATABASE_LOCATION = ".catalogue_db.json"
 class Catalogue:
     root_path = None
     last_update = None
-    files = None
+    _files = None
     _files_by_path = None
     _files_by_size = None
     _files_by_short_hash = None
     _files_by_hash = None
 
+    @property
+    def files(self):
+        return tuple(self._files.copy())
+
     def __init__(self, root_path: Path, files=None, last_update=None):
         self.root_path = root_path
-        self.files = []
+        self._files = []
         self.last_update = last_update
         self._files_by_path = {}
         self._files_by_size = {}
@@ -216,7 +220,7 @@ class Catalogue:
             if not new_value.is_relative_to(self.root_path):
                 file.unsubscribe(self)
                 with suppress(ValueError):
-                    self.files.remove(file)
+                    self._files.remove(file)
                 with suppress(ValueError):
                     self._files_by_size.setdefault(file.size, []).remove(file)
                 with suppress(ValueError):
@@ -232,7 +236,7 @@ class Catalogue:
 
     def add_file(self, file):
         file.subscribe(self)
-        self.files.append(file)
+        self._files.append(file)
         self._files_by_path[file.path] = file
         self._files_by_size.setdefault(file.size, []).append(file)
         if file._short_hash:
@@ -295,7 +299,7 @@ class Catalogue:
         return {
             "version": __version__,
             "last_update": self.last_update.isoformat(),
-            "files": [file_asdict(file) for file in self.files],
+            "files": [file_asdict(file) for file in self._files],
         }
 
     def save_db(self):
