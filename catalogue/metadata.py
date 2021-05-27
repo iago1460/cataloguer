@@ -29,32 +29,35 @@ def _normalize_datetime_format(exif_dt_field):
     except ValueError:
         return exif_dt
     except TypeError:
-        logging.info(f'Cannot parse "{exif_dt}", {exif_dt_field}')
+        logging.debug(f'Cannot parse {exif_dt=}')
         return None
 
 
 def _extract_created_date_from_exif(exif):
-    created_data = exif.get("DateTimeOriginal") or exif.get("DateTime")
+    exif_dt_field = exif.get("DateTimeOriginal") or exif.get("DateTime")
 
-    created_data = _normalize_datetime_format(created_data)
+    if not exif_dt_field:
+        return None
 
-    if created_data:
-        try:
-            return dateutil.parser.parse(created_data)
-        except ValueError as e:
-            if e.args[0] == "Unknown string format: %s":
-                unknown_date = e.args[1]
-                logging.debug(f"Attempting to parse unknown date {unknown_date}")
-                match = re.search(
-                    r"(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})", unknown_date
+    created_data = _normalize_datetime_format(exif_dt_field)
+    if not created_data:
+        return None
+
+    try:
+        return dateutil.parser.parse(created_data)
+    except ValueError as e:
+        if e.args[0] == "Unknown string format: %s":
+            unknown_date = e.args[1]
+            logging.debug(f"Attempting to parse unknown date {unknown_date}")
+            match = re.search(
+                r"(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})", unknown_date
+            )
+            if match:
+                year, month, day = match.groups()
+                return datetime.datetime(
+                    year=int(year), month=int(month), day=int(day)
                 )
-                if match:
-                    year, month, day = match.groups()
-                    return datetime.datetime(
-                        year=int(year), month=int(month), day=int(day)
-                    )
-            raise e
-    return None
+        raise e
 
 
 IMAGE_PATH_REGEXES = (

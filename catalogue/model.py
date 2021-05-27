@@ -1,17 +1,17 @@
-import json
 import hashlib
+import json
 import logging
-import magic
 import os
+from contextlib import suppress
+
+import magic
 import shutil
+from datetime import datetime, timezone, timedelta
 from itertools import chain
 from pathlib import PurePath, Path
-from contextlib import suppress
-from catalogue.metadata import get_image_creation_date, get_path_creation_date
 
-from datetime import datetime, timezone, timedelta
 from catalogue import __version__
-
+from catalogue.metadata import get_image_creation_date, get_path_creation_date
 
 CATALOGUE_EXPIRY_DELTA = timedelta(days=1)
 
@@ -138,7 +138,7 @@ DATABASE_LOCATION = ".catalogue_db.json"
 
 class Catalogue:
     root_path = None
-    last_update = None
+    creation_date = None
     _files = None
     _files_by_path = None
     _files_by_size = None
@@ -149,10 +149,11 @@ class Catalogue:
     def files(self):
         return tuple(self._files.copy())
 
-    def __init__(self, root_path: Path, files=None, last_update=None):
+    def __init__(
+        self, root_path: Path, files=None, creation_date=None):
         self.root_path = root_path
         self._files = []
-        self.last_update = last_update
+        self.creation_date = creation_date
         self._files_by_path = {}
         self._files_by_size = {}
         self._files_by_short_hash = {}
@@ -163,23 +164,27 @@ class Catalogue:
     @classmethod
     def load(cls, path):
         db_data = cls._load_data_from_database(path)
-        if db_data:
-            last_update = datetime.fromisoformat(db_data["last_update"])
-            if (
-                db_data["version"] == __version__
-                or datetime.now(timezone.utc) - last_update < CATALOGUE_EXPIRY_DELTA
+        if db_data and db_data.get("version") == __version__:
+            creation_date = datetime.fromisoformat(db_data["creation_date"])
+
+            if datetime.now(
+                timezone.utc
+            ) - creation_date < CATALOGUE_EXPIRY_DELTA and len(db_data['files']) == count_number_of_files(
+                path
             ):
-                logging.debug(
-                    "Database file seems suitable, using it to speed up things!"
-                )
+                logging.debug("Database found, using it to speed up things!")
                 files = [
                     File(**{**file_data, "path": path.joinpath(file_data["path"])})
                     for file_data in db_data["files"]
                 ]
-                return cls(path, files=files, last_update=last_update)
-            logging.debug("Database seems outdated, reverting to scan.")
+                return cls(
+                    path,
+                    files=files,
+                    creation_date=creation_date,
+                )
+            logging.debug(f"Database found but seems outdated, ignoring it")
 
-        logging.debug(f"Database not found, scanning {path}...")
+        logging.debug(f"Scanning {path}...")
         return cls._generate_catalogue_from_scan(path)
 
     @classmethod
@@ -209,7 +214,11 @@ class Catalogue:
                     logging.warning("Cannot read %s: %s", full_path, e)
                     continue
                 files.append(File(path=file_path, size=file_size))
-        return cls(root_path=path, files=files, last_update=datetime.now(timezone.utc))
+        return cls(
+            root_path=path,
+            files=files,
+            creation_date=datetime.now(timezone.utc),
+        )
 
     def notify(self, file, field, new_value):
         """
@@ -224,7 +233,9 @@ class Catalogue:
                 with suppress(ValueError):
                     self._files_by_size.setdefault(file.size, []).remove(file)
                 with suppress(ValueError):
-                    self._files_by_short_hash.setdefault(file._short_hash, []).remove(file)
+                    self._files_by_short_hash.setdefault(file._short_hash, []).remove(
+                        file
+                    )
                 with suppress(ValueError):
                     self._files_by_hash.setdefault(file._hash, []).remove(file)
                 return
@@ -298,12 +309,17 @@ class Catalogue:
 
         return {
             "version": __version__,
-            "last_update": self.last_update.isoformat(),
+            "creation_date": self.creation_date.isoformat(),
             "files": [file_asdict(file) for file in self._files],
         }
 
     def save_db(self):
         db_path = self.root_path.joinpath(DATABASE_LOCATION)
+
+        # Adding db file since we are going to save it below and will mess file counting next time
+        if self.is_path_available(db_path):
+            self.add_file(File(path=db_path))
+
         db_data = self.asdict()
         with open(db_path, "w") as db_file:
             # json.dump(db_data, db_file, indent=4) # debug
@@ -321,6 +337,14 @@ def split_extension(name):
     if len(name_split) > 1:
         return ".".join(name_split[0:-1]), name_split[-1]
     return name, ""
+
+
+def count_number_of_files(path):
+    file_count = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for _ in filenames:
+            file_count += 1
+    return file_count
 
 
 def _chunk_reader(fobj, chunk_size=1024):

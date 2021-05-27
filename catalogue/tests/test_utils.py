@@ -1,6 +1,7 @@
 import pytest
 
 from catalogue.model import split_extension
+from catalogue import __version__
 
 
 @pytest.mark.parametrize(
@@ -40,8 +41,8 @@ def test_catalogue_asdict(catalogue, text_file):
         "files": [
             {"hash": None, "path": "folder/text.txt", "short_hash": None, "size": None}
         ],
-        "last_update": "2021-01-01T22:00:30+00:00",
-        "version": "1.0",
+        "creation_date": "2021-01-01T22:00:30+00:00",
+        "version": __version__,
     }
 
 

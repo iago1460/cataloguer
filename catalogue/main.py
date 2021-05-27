@@ -75,22 +75,22 @@ def main():
         default=None,
     )
     parser.add_argument(
-        "--unknown-folder",
-        help="If provided will be used for media without creation date\n"
-        "It accepts same options as the format flag, strftime format will refer to current time",
-        dest="unknown_folder",
-        type=str,
-        required=False,
-        default=None,
-    )
-    parser.add_argument(
         "--format",
-        help="Customize how to structure the files in your catalogue. e.g: '%%Y/%%m/%%d/{filename}\n"
+        help="Customize how to structure the files in your catalogue. By default : '%%Y/%%m/%%d/{filename}\n"
         "All python strftime format codes are supported as well as {filename}, {basename}, {filename_extension}, {media_type}",
         dest="path_format",
         type=str,
         required=False,
         default="%Y/%m/%d/{filename}",
+    )
+    parser.add_argument(
+        "--unknown-folder",
+        help="If provided will be used for media without creation date\n"
+        "It accepts same options as the format argument, strftime format codes will refer to current time instead of creation date",
+        dest="unknown_folder",
+        type=str,
+        required=False,
+        default=None,
     )
 
     args = parser.parse_args()
@@ -120,11 +120,11 @@ def main():
         duplicated_files_list = src_catalogue.detect_duplicates_with(dst_catalogue)
 
     if duplicated_files_list:
-        logging.info(f"Ignoring some duplicates files which are already present")
+        logging.info(f"Ignoring some duplicate files which are already present")
         if args.verbose:
             for files_list in duplicated_files_list:
                 logging.info(
-                    "  * {files}".format(
+                    "  - {files}".format(
                         files=", ".join(sorted(map(escape, files_list)))
                     )
                 )
@@ -140,7 +140,7 @@ def main():
         )
         for files_list in duplicated_list_of_files_to_import:
             logging.info(
-                "  * {files}".format(files=", ".join(sorted(map(escape, files_list))))
+                "  - {files}".format(files=", ".join(sorted(map(escape, files_list))))
             )
         # Remove each first file from the list so it gets imported
         duplicated_list_of_files_to_import = set(
@@ -168,10 +168,7 @@ def main():
                 logging.debug(f"Skipping '{media_type}' file {file.path}")
                 continue
 
-            if (
-                file in duplicated_files
-                or file in duplicated_list_of_files_to_import
-            ):
+            if file in duplicated_files or file in duplicated_list_of_files_to_import:
                 logging.debug(f"Skipping duplicated file {file.path}")
                 continue
 
@@ -208,7 +205,9 @@ def main():
                 )
                 imported_files.append(processed_file)
 
-        if args.operation != Operation.DRY_RUN:  # shouldn't save if dry run (data is messed up too)
+        if (
+            args.operation != Operation.DRY_RUN
+        ):  # shouldn't save if dry run (data is messed up too)
             logging.info("Saving catalogue...")
             dst_catalogue.save_db()
 
@@ -235,10 +234,12 @@ def generate_filename(file, path_format, dt, parent_folder, media_type):
 def process_file(file, operation, dst_catalogue, dst_file_path):
     path_available = dst_catalogue.is_path_available(dst_file_path)
     if not path_available:
+        logging.debug(f"Path {dst_file_path} not available, renaming file")
         dst_file_path = dst_catalogue.find_new_path(dst_file_path)
 
     if operation == Operation.DRY_RUN:
-        logging.info(f"dry-run: {file.path} -> {dst_file_path}")
+        collision_indicator = ' *' if not path_available else ''
+        logging.info(f"dry-run: {file.path} -> {dst_file_path}{collision_indicator}")
         file.path = dst_file_path
         dst_catalogue.add_file(file)  # needed so path_available is more accurate
         return None

@@ -12,10 +12,9 @@ Move or copy your files according to your preferred format, using any combinatio
 
 ```bash
 $ catalogue --help
-usage: catalogue [-h] [--version] [--verbose]
-                 [--operation {move,copy,dry-run}] [--src SRC_PATH]
-                 [--dst DST_PATH] [--unknown-folder UNKNOWN_FOLDER]
-                 [--format PATH_FORMAT]
+usage: catalogue [-h] [--version] [--verbose] [--operation {move,copy,dry-run}]
+               [--src SRC_PATH] [--dst DST_PATH] [--format PATH_FORMAT]
+               [--unknown-folder UNKNOWN_FOLDER]
 
 Organize your photos folder,.
 Example usage:
@@ -29,11 +28,11 @@ optional arguments:
                         Specify how to move files (copy, move or dry-run)
   --src SRC_PATH        Path to the source directory.
   --dst DST_PATH        Path to the destination directory.
+  --format PATH_FORMAT  Customize how to structure the files in your catalogue. By default : '%Y/%m/%d/{filename}
+                        All python strftime format codes are supported as well as {filename}, {basename}, {filename_extension}, {media_type}
   --unknown-folder UNKNOWN_FOLDER
                         If provided will be used for media without creation date
-                        It accepts same options as the format flag, strftime format will refer to current time
-  --format PATH_FORMAT  Customize how to structure the files in your catalogue. e.g: '%Y/%m/%d/{filename}
-                        All python strftime format codes are supported as well as {filename}, {basename}, {filename_extension}, {media_type}
+                        It accepts same options as the format argument, strftime format codes will refer to current time instead of creation date
 ```
 
 ## Requirements
@@ -49,14 +48,14 @@ The easier way to run this project is using docker:
 
 Run example; notice `source` and `my_catalogue` need to be replace with your destinations:
 
-    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output iago1460/catalogue:1.2.5 --src /input --dst /output --operation copy
+    docker run --rm -v $(pwd)/source:/input:ro -v $(pwd)/my_catalogue:/output iago1460/catalogue:1.2.6 --src /input --dst /output --operation copy
 
 
 ### In a virtual environment
 
     virtualenv venv
     source venv/bin/activate
-    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.2.5.zip
+    pip3 install https://github.com/iago1460/photo-cataloguer/archive/1.2.6.zip
     catalogue --help
 
 

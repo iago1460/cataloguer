@@ -20,5 +20,5 @@ def catalogue():
     assert TEST_CATALOGUE_PATH.exists()
     return Catalogue(
         TEST_CATALOGUE_PATH,
-        last_update=datetime(2021, 1, 1, 22, 00, 30, tzinfo=timezone.utc),
+        creation_date=datetime(2021, 1, 1, 22, 00, 30, tzinfo=timezone.utc),
     )
