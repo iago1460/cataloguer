@@ -15,7 +15,7 @@ downloads/
 eggs/
 .eggs/
 dist/
-catalogue.egg-info/
+cataloguer.egg-info/
 lib/
 lib64/
 parts/
@@ -107,4 +107,3 @@ venv.bak/
 .mypy_cache/
 
 test_images/
-my_catalogue/

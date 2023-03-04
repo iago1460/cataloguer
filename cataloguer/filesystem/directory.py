@@ -22,7 +22,7 @@ from .file import File
 from .utils import split_extension_from_filename, count_number_of_files
 from ..console.default import console
 
-DATABASE_LOCATION = ".catalogue_db.json"
+DATABASE_LOCATION = ".cataloguer_db.json"
 
 logger = logging.getLogger(__name__)
 

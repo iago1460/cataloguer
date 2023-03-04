@@ -39,7 +39,7 @@ class Operation(Enum):
         return self.value
 
 
-@click.group(context_settings={"auto_envvar_prefix": "CATALOGUE"})
+@click.group(context_settings={"auto_envvar_prefix": "CATALOGUER"})
 @click.option(
     "-v",
     "--verbose",
@@ -57,7 +57,7 @@ def cli(ctx, verbose, interactive):
     """
     Command line interface.
 
-    All [OPTIONS] can be passed as environment variables with the "CATALOGUE_" prefix.
+    All [OPTIONS] can be passed as environment variables with the "CATALOGUER_" prefix.
 
     file arguments accept file names and a special value "-" to indicate stdin or stdout
     """

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import BaseModel
 
-from catalogue.filesystem.utils import split_extension_from_filename
+from cataloguer.filesystem.utils import split_extension_from_filename
 
 
 @pytest.mark.parametrize(

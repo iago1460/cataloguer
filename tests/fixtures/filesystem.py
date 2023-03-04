@@ -3,8 +3,8 @@ import tempfile
 from datetime import timezone, datetime
 
 from pathlib import Path
-from catalogue.filesystem.file import File
-from catalogue.filesystem.directory import Catalogue
+from cataloguer.filesystem.file import File
+from cataloguer.filesystem.directory import Catalogue
 import pytest
 
 

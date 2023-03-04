@@ -28,18 +28,18 @@ It also deals with duplicates, so you don't have to.
 ### In a virtual environment
 
     poetry install
-    catalogue --help
+    cataloguer --help
 
 
 ### Usage
 
 ```bash
-$ catalogue --help
+$ cataloguer --help
 
- Usage: catalogue [OPTIONS] COMMAND [ARGS]...                                                                                                                                                
+ Usage: cataloguer [OPTIONS] COMMAND [ARGS]...                                                                                                                                                
                                                                                                                                                                                              
  Command line interface.                                                                                                                                                                     
- All [OPTIONS] can be passed as environment variables with the "CATALOGUE_" prefix.                                                                                                          
+ All [OPTIONS] can be passed as environment variables with the "CATALOGUER_" prefix.                                                                                                          
  file arguments accept file names and a special value "-" to indicate stdin or stdout                                                                                                        
                                                                                                                                                                                              
 ╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -67,33 +67,33 @@ We are going to start creating a new directory `media`:
 We are going to create a new catalogue named `local_photos` which is going to get store on the `media` directory.
 We specify our format pattern so photos are group by `year` and a subgroup of `month`:
 
-    export CATALOGUE_FORMAT_PATTERN=%Y/%m/{file}
-    catalogue create-catalogue local_media --path ./media 
+    export CATALOGUER_FORMAT_PATTERN=%Y/%m/{file}
+    cataloguer create-catalogue local_media --path ./media 
 
 
 Now, we add some photos from an old storage driver:
 
-    catalogue copy /mnt/hdd/old_photos local_media
+    cataloguer copy /mnt/hdd/old_photos local_media
 
 
 Later on, we decided we want to reorganize our local home folder, but we are not sure of how many files are 
 going to be affected, so we run the command in `dry-run` mode:
 
-    catalogue move ~/ local_media --dry-run
+    cataloguer move ~/ local_media --dry-run
 
 After seeing the output, we decided to just reorganize our `Pictures`:
 
-    catalogue move ~/Pictures/ local_media
+    cataloguer move ~/Pictures/ local_media
 
 
 To get a summary of our catalogue we run:
 
-    catalogue inspect local_media
+    cataloguer inspect local_media
 
 
 ## Options
 
-`CATALOGUE_FORMAT_PATTERN` accepts the following patterns
+`CATALOGUER_FORMAT_PATTERN` accepts the following patterns
 * Common date codes:
   * `%d`: Day of the month as number
   * `%m`: Month as number
@@ -112,18 +112,18 @@ To get a summary of our catalogue we run:
 
 ### Advance usage:
 
-`CATALOGUE_UNKNOWN_PATH_FORMAT` Accepts the same variables as `CATALOGUE_FORMAT_PATTERN` but date patterns 
+`CATALOGUER_UNKNOWN_PATH_FORMAT` Accepts the same variables as `CATALOGUER_FORMAT_PATTERN` but date patterns 
 are resolved using the current date since it was not possible to recover the creation date of the file.
 This can be useful to not leave files behind.
 
-`CATALOGUE_STORAGE_LOCATION` Accepts any path. That location will store catalogue metadata.
-By default, it will create a `.catalogue` in the user's home directory.
+`CATALOGUER_STORAGE_LOCATION` Accepts any path. That location will store cataloguer metadata.
+By default, it will create a `.catalogues` in the user's home directory.
 
 #### Examples:
 
 Pattern to fix file extensions keeping the folder structure:
 
-    CATALOGUE_FORMAT_PATTERN={relative_path}/{basename}.{media_format} catalogue ./input ./output
+    CATALOGUER_FORMAT_PATTERN={relative_path}/{basename}.{media_format} cataloguer ./input ./output
 
 
 ## TODO list

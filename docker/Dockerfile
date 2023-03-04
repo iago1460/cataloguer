@@ -15,4 +15,4 @@ COPY ./ ${PROJECT_FOLDER}/
 
 WORKDIR ${PROJECT_FOLDER}
 ENV PYTHONUNBUFFERED 1
-ENTRYPOINT [ "python3", "-m", "catalogue"]
+ENTRYPOINT [ "python3", "-m", "cataloguer"]

@@ -1,4 +1,4 @@
-from catalogue.filesystem.directory import Catalogue
+from cataloguer.filesystem.directory import Catalogue
 
 
 def test_catalogue_serialization(catalogue, text_file):

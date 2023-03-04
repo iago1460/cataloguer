@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from catalogue.cli import cli, Context, GlobalSettings, Storage
+from cataloguer.cli import cli, Context, GlobalSettings, Storage
 
 FIXTURES_PATH = (
     Path(os.path.dirname(os.path.realpath(__file__)))
@@ -22,7 +22,7 @@ def test_catalogue_path():
 
 @pytest.fixture
 def cli_runner(monkeypatch, storage_path):
-    monkeypatch.setenv("CATALOGUE_STORAGE_LOCATION", str(storage_path))
+    monkeypatch.setenv("CATALOGUER_STORAGE_LOCATION", str(storage_path))
     runner = CliRunner()
     with runner.isolated_filesystem():
         yield runner
@@ -49,7 +49,7 @@ def test_inspect(cli_runner, test_catalogue_path):
 def test_create_catalogue_and_adding_files(
     monkeypatch, cli_runner, test_catalogue_path
 ):
-    monkeypatch.setenv("CATALOGUE_FORMAT_PATTERN", "%Y/%m/%d/{file}")
+    monkeypatch.setenv("CATALOGUER_FORMAT_PATTERN", "%Y/%m/%d/{file}")
 
     result = invoke(
         args=("create-catalogue", "test_catalogue", str(test_catalogue_path)),
@@ -67,7 +67,7 @@ def test_create_catalogue_and_adding_files(
     assert "5 files have not being processed" in result.stdout
 
     # add some files directly to the path (so catalogue settings do not apply)
-    monkeypatch.setenv("CATALOGUE_FORMAT_PATTERN", "{file}")
+    monkeypatch.setenv("CATALOGUER_FORMAT_PATTERN", "{file}")
     result = invoke(
         args=(
             "copy",
@@ -82,7 +82,7 @@ def test_create_catalogue_and_adding_files(
 
 
 def test_copy_files_without_duplicates(monkeypatch, cli_runner, test_catalogue_path):
-    monkeypatch.setenv("CATALOGUE_FORMAT_PATTERN", "{file}")
+    monkeypatch.setenv("CATALOGUER_FORMAT_PATTERN", "{file}")
 
     # Only one copy of the same file should be imported
     result = invoke(

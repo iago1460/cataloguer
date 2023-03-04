@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 
-DATABASE_LOCATION = ".catalogue_db.json"
+DATABASE_LOCATION = ".cataloguer_db.json"
 
 KEEP_PARENT_FOLDERS = (  # TODO: undocumented behaviour
     "Time Lapse",

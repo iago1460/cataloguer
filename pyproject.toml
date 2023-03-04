@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "catalogue"
+name = "cataloguer"
 version = "2.0"
 description = "Organize your media files"
 authors = ["Iago Veloso"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/iago1460/photo-cataloguer"
+repository = "https://github.com/iago1460/cataloguer"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -33,7 +33,7 @@ pytest = "~7.2.1"
 pytest-mock = "~3.10"
 
 [tool.poetry.scripts]
-catalogue = "catalogue.cli:cli"
+cataloguer = "cataloguer.cli:cli"
 
 [build-system]
 requires = ["poetry-core"]
