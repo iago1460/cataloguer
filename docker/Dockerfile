@@ -1,15 +1,18 @@
-FROM python:3.9.5-alpine3.13
+FROM public.ecr.aws/lambda/python:3.9 AS requirements
 
-RUN apk add --no-cache jpeg-dev zlib-dev build-base g++ freetype-dev
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev tzdata
+ENV POETRY_VIRTUALENVS_CREATE=false \
+    INSIDE_DOCKER=true \
+    POETRY_VERSION=1.2.1
 
-COPY ./requirements*.txt /
-RUN pip3 install -r /requirements.txt
+RUN pip3 install poetry==$POETRY_VERSION
 
-COPY ./catalogue /srv/catalogue
+ENV PROJECT_FOLDER=/src
 
-WORKDIR /srv/
+COPY ./pyproject.toml ./poetry.lock ${PROJECT_FOLDER}/
+RUN poetry install --no-interaction --no-ansi
 
+COPY ./ ${PROJECT_FOLDER}/
+
+WORKDIR ${PROJECT_FOLDER}
 ENV PYTHONUNBUFFERED 1
-
 ENTRYPOINT [ "python3", "-m", "catalogue"]
