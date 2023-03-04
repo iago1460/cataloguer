@@ -25,10 +25,9 @@ It also deals with duplicates, so you don't have to.
 ## Requirements
 - Python 3.9 or higher
 
-### In a virtual environment
+## Installation
 
-    poetry install
-    cataloguer --help
+    pip install cataloguer
 
 
 ### Usage
