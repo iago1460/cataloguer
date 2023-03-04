@@ -87,6 +87,7 @@ def inspect(ctx: Context, src, media_only):
     # TODO: allow single file
     directory = ctx.storage.load_catalogue(src, force_reload=True)
     if not directory:
+        src_path = None
         with suppress(FileNotFoundError):
             src_path = Path(src).expanduser().resolve(strict=True)
         if not src_path or not src_path.is_dir():

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cataloguer"
-version = "2.0"
+version = "2.0.1"
 description = "Organize your media files"
 authors = ["Iago Veloso"]
 license = "MIT"
