@@ -232,6 +232,9 @@ def delete_duplicates(ctx: Context, src, dst, dry_run):
 def filter_list_of_duplicated_files(
     duplicated_list_of_files_sorted_by_name_length, files_to_process
 ):
+    """
+    Returns a list of duplicates files which have different names and will be processed.
+    """
     def has_different_names(files):
         return len(set([file.path.name for file in files])) > 1
 

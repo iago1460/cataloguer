@@ -13,11 +13,15 @@ class FileInfo(BaseModel):
     file: File
     old_path: Path
 
+    @property
+    def path(self):
+        return self.file.path or self.old_path
+
     def __hash__(self):
-        return self.file.path.__hash__()
+        return self.path.__hash__()
 
     def __eq__(self, other):
-        return self.file.path == other.file.path
+        return self.path == other.path
 
     class Config:
         arbitrary_types_allowed = True

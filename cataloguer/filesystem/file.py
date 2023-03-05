@@ -40,7 +40,7 @@ class File(Observable):
         self._short_hash = short_hash
 
     def __str__(self):
-        return str(self.path)
+        return str(self.path or self._hash)
 
     @property
     def path(self):
