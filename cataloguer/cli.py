@@ -47,13 +47,15 @@ class Operation(Enum):
     help="Enables verbose mode. Disabled by default",
     default=False,
 )
+@click.option("--format-pattern", help='Pattern template. e.g. %Y/%m/{file}', required=False)
+@click.option("--unknown-format-pattern", help='Pattern template fallback when date cannot get extracted', required=False)
 @click.option(
     "--interactive/--no-interactive",
     help="Disables confirmation prompts. Enabled by default",
     default=True,
 )
 @click.pass_context
-def cli(ctx, verbose, interactive):
+def cli(ctx, verbose, interactive, format_pattern, unknown_format_pattern):
     """
     Command line interface.
 
@@ -62,7 +64,7 @@ def cli(ctx, verbose, interactive):
     file arguments accept file names and a special value "-" to indicate stdin or stdout
     """
     if not ctx.obj:
-        global_settings = GlobalSettings()
+        global_settings = GlobalSettings(format_pattern=format_pattern, unknown_format_pattern=unknown_format_pattern)
         ctx.obj = Context(
             global_settings=global_settings,
             storage=Storage(path=global_settings.storage_location),
@@ -110,8 +112,12 @@ def inspect(ctx: Context, src, media_only):
         print_table_summary(name=name, files=files, duplicated_files=duplicated_files)
 
         if duplicated_files:
+            duplicated_list_of_files_sorted_by_name_length = list(
+                sorted(duplicated_list, key=lambda file: (len(file.path.name), len(str(file.path))))
+                for duplicated_list in duplicated_files
+            )
             print_duplicate_files(
-                duplicated_files=duplicated_files, from_path=directory.path
+                duplicated_files=duplicated_list_of_files_sorted_by_name_length, from_path=directory.path
             )
 
     if isinstance(directory, Catalogue):
@@ -143,8 +149,10 @@ def delete_catalogue(ctx: Context, name):
 @cli.command()
 @click.argument("name")
 @click.argument("src", required=False)
+@click.option("--format-pattern", help='Pattern template. e.g. %Y/%m/{file}', required=False)
+@click.option("--unknown-format-pattern", help='Pattern template fallback when date cannot get extracted', required=False)
 @click.pass_obj
-def create_catalogue(ctx: Context, name, src):
+def create_catalogue(ctx: Context, name, src, format_pattern, unknown_format_pattern):
     """
     Creates a new catalogue.
     """
@@ -154,6 +162,13 @@ def create_catalogue(ctx: Context, name, src):
             src_path = Path(src).expanduser().resolve(strict=True)
         if not src_path or not src_path.is_dir():
             raise click.BadParameter(f'Error "{src}" is not an existing path')
+
+    format_pattern = format_pattern or ctx.global_settings.format_pattern
+    unknown_format_pattern = unknown_format_pattern or ctx.global_settings.unknown_format_pattern
+    if not format_pattern:
+        raise click.BadParameter(
+            'Error there is no format pattern specified'
+        )
 
     catalogue_path = src_path or ctx.workdir
     existing_catalogue = ctx.storage.load_catalogue(name)
@@ -165,8 +180,8 @@ def create_catalogue(ctx: Context, name, src):
 
     new_catalogue = Catalogue(
         name=name,
-        format_pattern=ctx.global_settings.format_pattern,
-        unknown_format_pattern=ctx.global_settings.unknown_format_pattern,
+        format_pattern=format_pattern,
+        unknown_format_pattern=unknown_format_pattern,
         path=catalogue_path,
     )
     new_catalogue.explore()
@@ -261,7 +276,7 @@ def extract_files(src_data):
 
         if duplicated_list_of_files:
             duplicated_list_of_files_sorted_by_name_length = list(
-                sorted(duplicated_list, key=lambda file: len(file.path.name))
+                sorted(duplicated_list, key=lambda file: (len(file.path.name), len(str(file.path))))
                 for duplicated_list in duplicated_list_of_files
             )
 
@@ -325,16 +340,29 @@ def operate(ctx, src, dst, operation_mode, dry_run=False):
             f'Error "{dst}" is neither a catalogue or an existing directory'
         )
 
-    if isinstance(src_data, File) and (
-        not dst_data or not isinstance(dst_data, (Catalogue, Directory))
-    ):
+    if isinstance(src_data, (Catalogue, Directory)) and dst_data:
+        if src_data.path.is_relative_to(dst_data.path):
+            raise click.BadParameter(
+                f'Error "{dst}" cannot be a subdirectory of {src}'
+            )
+
+    if operation_mode in (Operation.MOVE, Operation.COPY):
+        format_pattern = ctx.global_settings.format_pattern
+        if dst_data and isinstance(dst_data, Catalogue):
+            format_pattern = format_pattern or dst_data.format_pattern
+        if not format_pattern:
+            raise click.BadParameter(
+                'Error there is no format pattern specified'
+            )
+
+    if isinstance(src_data, File) and not dst_data:
         raise click.BadParameter(
             f'Error "{src}" is a file but no valid destination was provided'
         )
 
     with console.status(
         f"[green]Inspecting files...",
-    ) as status:
+    ):
         (
             duplicated_list_of_files_sorted_by_name_length,
             duplicated_discarded_files,
@@ -447,8 +475,8 @@ def process_files(
     path_format = ctx.global_settings.format_pattern
     unknown_format_pattern = ctx.global_settings.unknown_format_pattern
     if isinstance(dst_data, Catalogue):
-        path_format = dst_data.format_pattern
-        unknown_format_pattern = dst_data.unknown_format_pattern
+        path_format = path_format or dst_data.format_pattern
+        unknown_format_pattern = unknown_format_pattern or dst_data.unknown_format_pattern
 
     tree = DirectoryTree()
     skipped_tree = DirectoryTree()

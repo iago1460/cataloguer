@@ -49,10 +49,8 @@ def test_inspect(cli_runner, test_catalogue_path):
 def test_create_catalogue_and_adding_files(
     monkeypatch, cli_runner, test_catalogue_path
 ):
-    monkeypatch.setenv("CATALOGUER_FORMAT_PATTERN", "%Y/%m/%d/{file}")
-
     result = invoke(
-        args=("create-catalogue", "test_catalogue", str(test_catalogue_path)),
+        args=("create-catalogue", "--format-pattern", "%Y/%m/%d/{file}", "test_catalogue", str(test_catalogue_path)),
         runner=cli_runner,
     )
     assert result.exit_code == 0, result.output

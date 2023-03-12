@@ -16,7 +16,7 @@ ALLOWED_FORMAT_VARIABLES = (
 
 
 class GlobalSettings(BaseSettings):
-    format_pattern: str = "%Y/%m/%d/{file}"
+    format_pattern: Optional[str] = None
     unknown_format_pattern: Optional[str] = None
     storage_location: Path = Path.home().joinpath(".catalogues/")
 
