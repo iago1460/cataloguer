@@ -1,5 +1,8 @@
 # Changelog
 
+## [v2.2] - 2023-10-22
+* Adding sort feature
+
 ## [v2.1] - 2023-03-12
 
 ### Features

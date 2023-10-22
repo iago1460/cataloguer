@@ -14,12 +14,12 @@ It also deals with duplicates, so you don't have to.
 
 ## Disclaimer
 
-Per design this command line interface tool deletes only duplicate files to potentially avoid any risk of losing data.
+Per design, this command line interface tool **only deletes duplicate files** to avoid any risk of losing data.
 
 
 ## Features
 
-* Move, Copy or delete duplicates operations
+* Move, copy, sort or delete duplicates operations
 * User-friendly console output
 * Obscure creation date detection
 * Custom folder structure definition
@@ -70,7 +70,7 @@ We are going to start creating a new directory `media`:
 
     mkdir media
 
-We are going to create a new catalogue named `local_photos` which is going to get store on the `media` directory.
+We are going to create a new catalogue named `local_media` which is going to get store on the newly created `media` directory.
 We specify our format pattern so photos are group by `year` and a subgroup of `month`:
 
     cataloguer create-catalogue local_media ./media --format-pattern %Y/%m/{file}
@@ -107,11 +107,11 @@ To get a summary of our catalogue we run:
   * `%B`: Month name
   * other format codes specified [here](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes)
 * `/` Specifies a new folder
-* `{media_type}`: File type (`image`, `video`)
-* `{media_format}`: File format (`jpeg`, `tiff`, `png`, `gif`, `mp4` ...)
+* `{media_type}`: Detected file type (`image`, `video`)
+* `{media_format}`: Detected file format (`jpeg`, `tiff`, `png`, `gif`, `mp4` ...)
 * `{file}` Original filename (`photo.jpg`)
-* `{file_extension}` filename extension (`photo`)
-* `{file_name}` filename without the extension (`jpg`)
+* `{file_name}` Filename without the extension (`photo`)
+* `{file_extension}` Filename extension (`jpg`)
 * `{relative_path}` Relative path to the source directory
 
 
@@ -124,14 +124,14 @@ Variables can also be specified as environment variables, using a `CATALOGUER_` 
 
     export CATALOGUER_FORMAT_PATTERN=%Y/%m/{file}
 
-`CATALOGUER_STORAGE_LOCATION` Accepts any path. That location will store cataloguer metadata.
+`CATALOGUER_STORAGE_LOCATION` Accepts any path. That location will store metadata.
 By default, it will create a `.catalogues` in the user's home directory.
 
 #### Examples:
 
 Pattern to fix file extensions keeping the folder structure:
 
-     cataloguer --format-pattern {relative_path}/{basename}.{media_format} move ./input ./output
+     cataloguer --format-pattern {relative_path}/{file_name}.{media_format} sort ./target/
 
 
 ## TODO list

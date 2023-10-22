@@ -32,6 +32,7 @@ class Context(BaseModel):
 
 class Operation(Enum):
     MOVE = "move"
+    SORT = "sort"
     COPY = "copy"
     DELETE = "delete"
 
@@ -233,6 +234,18 @@ def move(ctx: Context, src, dst, dry_run):
 
 @cli.command()
 @click.argument("src")
+@click.option("--dry-run", is_flag=True)
+@click.pass_obj
+def sort(ctx: Context, src, dry_run):
+    """
+    Move files. In case of duplicates will take the shortest name.
+    """
+    operation_mode = Operation.SORT
+    return operate(ctx, src, None, operation_mode, dry_run)
+
+
+@cli.command()
+@click.argument("src")
 @click.argument("dst", required=False)
 @click.option("--dry-run", is_flag=True)
 @click.pass_obj
@@ -346,7 +359,7 @@ def operate(ctx, src, dst, operation_mode, dry_run=False):
                 f'Error "{dst}" cannot be a subdirectory of {src}'
             )
 
-    if operation_mode in (Operation.MOVE, Operation.COPY):
+    if operation_mode in (Operation.MOVE, Operation.COPY, Operation.SORT):
         format_pattern = ctx.global_settings.format_pattern
         if dst_data and isinstance(dst_data, Catalogue):
             format_pattern = format_pattern or dst_data.format_pattern
@@ -368,7 +381,7 @@ def operate(ctx, src, dst, operation_mode, dry_run=False):
             duplicated_discarded_files,
             files_to_operate,
         ) = extract_files(src_data)
-
+        
     if operation_mode == Operation.DELETE:
         if dst_data:
             duplicate_files_across_directories = [
@@ -400,6 +413,9 @@ def operate(ctx, src, dst, operation_mode, dry_run=False):
                     duplicated_files=duplicated_list_of_different_filenames
                 )
 
+    elif operation_mode == Operation.SORT:
+        files_to_process = files_to_operate
+        dst_data = src_data
     else:  # dst_data can only be Directory or Catalogue
         duplicate_files_across_directories = [
             file
@@ -477,6 +493,10 @@ def process_files(
     if isinstance(dst_data, Catalogue):
         path_format = path_format or dst_data.format_pattern
         unknown_format_pattern = unknown_format_pattern or dst_data.unknown_format_pattern
+    if operation_mode.SORT and isinstance(src_data, Catalogue):
+        path_format = path_format or src_data.format_pattern
+        unknown_format_pattern = unknown_format_pattern or src_data.unknown_format_pattern
+        
 
     tree = DirectoryTree()
     skipped_tree = DirectoryTree()
@@ -527,6 +547,9 @@ def process_file(file, dst_file_path, operation, dst_directory, dry_run):
 
     path_available = dst_directory.is_path_available(dst_file_path)
     if not path_available:
+        if operation.SORT:
+            # TODO: check if it is same file, for now just avoid moving it
+            return file
         logging.debug(f"Path {dst_file_path} not available, renaming file")
         dst_file_path = dst_directory.find_new_path(dst_file_path)
 
@@ -541,6 +564,10 @@ def process_file(file, dst_file_path, operation, dst_directory, dry_run):
     if operation == Operation.MOVE:
         file.move_file(dst_file_path)
         dst_directory.add_file(file)
+        return file
+
+    if operation == Operation.SORT:
+        file.move_file(dst_file_path)
         return file
 
     if operation == Operation.COPY:
