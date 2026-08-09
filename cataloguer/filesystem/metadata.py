@@ -2,9 +2,8 @@ import datetime
 import logging
 import re
 
-import PIL.ExifTags
 import dateutil.parser
-from PIL import Image
+from PIL import ExifTags, Image
 from PIL.TiffTags import TAGS
 
 
@@ -51,11 +50,32 @@ def get_image_creation_date(path):
 def _get_exif(image):
     if image.format == "TIFF":
         return {TAGS.get(key): image.tag[key] for key in image.tag.keys()}
-    return {
-        PIL.ExifTags.TAGS[k]: v
-        for k, v in image._getexif().items()
-        if k in PIL.ExifTags.TAGS
-    }
+    return _flatten_exif_ifds(image.getexif())
+
+
+def _flatten_exif_ifds(exif):
+    """
+    Flatten the base IFD together with the Exif sub-IFD into a tag-name dict.
+
+    This has to read both IFDs on purpose. Pillow's public ``Image.getexif()``
+    only exposes the base IFD (IFD0), while ``DateTimeOriginal`` - the capture
+    date this tool relies on - lives in the Exif sub-IFD. Reading only the base
+    IFD therefore loses the creation date silently, with no error raised: files
+    still get processed, they just fall back to the path/filename heuristics or
+    to ``unknown_format_pattern``.
+
+    The private ``Image._getexif()`` this used to call returned both IFDs
+    already merged, which is why it appeared to work and why replacing it with
+    the public call naively regresses date detection.
+    """
+    metadata = {}
+    # Base IFD first so the Exif sub-IFD wins on the (rare) duplicated tag.
+    for ifd in (exif, exif.get_ifd(ExifTags.IFD.Exif)):
+        for tag_id, value in ifd.items():
+            tag_name = ExifTags.TAGS.get(tag_id)
+            if tag_name:
+                metadata[tag_name] = value
+    return metadata
 
 
 def _normalize_datetime_format(exif_dt_field):

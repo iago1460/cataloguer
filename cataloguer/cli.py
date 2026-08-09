@@ -238,7 +238,7 @@ def move(ctx: Context, src, dst, dry_run):
 @click.pass_obj
 def sort(ctx: Context, src, dry_run):
     """
-    Move files. In case of duplicates will take the shortest name.
+    Reorganise files in place, applying the format pattern. In case of duplicates will take the shortest name.
     """
     operation_mode = Operation.SORT
     return operate(ctx, src, None, operation_mode, dry_run)

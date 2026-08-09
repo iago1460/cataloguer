@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import List, Set
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from rich.markup import escape
 from rich.tree import Tree
 
@@ -10,6 +9,10 @@ from ..filesystem.utils import approximate_size
 
 
 class FileInfo(BaseModel):
+    # File is a plain class (not a pydantic model), so it needs to be allowed
+    # through validation as an opaque type.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     file: File
     old_path: Path
 
@@ -23,14 +26,11 @@ class FileInfo(BaseModel):
     def __eq__(self, other):
         return self.path == other.path
 
-    class Config:
-        arbitrary_types_allowed = True
-
 
 class DirectoryInfo(BaseModel):
     path: Path
-    files: Set[FileInfo]
-    sub_directories: Set["DirectoryInfo"]
+    files: set[FileInfo]
+    sub_directories: set["DirectoryInfo"]
 
     def __hash__(self):
         return self.path.__hash__()
@@ -107,7 +107,7 @@ def _expand_tree(tree, directory_info: DirectoryInfo):
         _expand_tree(tree=branch, directory_info=sub_directory_info)
 
 
-def _get_parents(path: Path) -> List[Path]:
+def _get_parents(path: Path) -> list[Path]:
     directories = []
     while path != Path("/"):
         directories.append(path)

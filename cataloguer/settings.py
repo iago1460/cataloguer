@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Optional
 
 import click
-from pydantic import BaseSettings, validator
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 ALLOWED_FORMAT_VARIABLES = (
@@ -16,15 +16,20 @@ ALLOWED_FORMAT_VARIABLES = (
 
 
 class GlobalSettings(BaseSettings):
-    format_pattern: Optional[str] = None
-    unknown_format_pattern: Optional[str] = None
-    storage_location: Path = Path.home().joinpath(".catalogues/")
+    model_config = SettingsConfigDict(env_prefix="CATALOGUER_")
 
-    class Config:
-        env_prefix = "CATALOGUER_"
+    format_pattern: str | None = None
+    unknown_format_pattern: str | None = None
+    # validate_default is required for storage_location_must_exists to run when
+    # the default is used. Validators skip defaults otherwise, so the directory
+    # was never created unless CATALOGUER_STORAGE_LOCATION was set explicitly.
+    storage_location: Path = Field(
+        default=Path.home().joinpath(".catalogues/"), validate_default=True
+    )
 
-    @validator("format_pattern", "unknown_format_pattern", allow_reuse=True)
-    def validate_format_pattern(cls, format_pattern: str):
+    @field_validator("format_pattern", "unknown_format_pattern")
+    @classmethod
+    def validate_format_pattern(cls, format_pattern: str | None):
         if format_pattern:
             try:
                 format_pattern.format(
@@ -36,7 +41,8 @@ class GlobalSettings(BaseSettings):
                 )
         return format_pattern
 
-    @validator("storage_location")
+    @field_validator("storage_location")
+    @classmethod
     def storage_location_must_exists(cls, storage_location: Path):
         if storage_location:
             storage_location = storage_location.resolve()

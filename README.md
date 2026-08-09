@@ -28,7 +28,10 @@ Per design, this command line interface tool **only deletes duplicate files** to
 
 
 ## Requirements
-- Python 3.9 or higher
+- Python 3.10 or higher
+- `libmagic`, required by [python-magic](https://pypi.org/project/python-magic/) for file type detection:
+  - Debian/Ubuntu: `apt install libmagic1`
+  - macOS: `brew install libmagic`
 
 ## Installation
 
@@ -60,6 +63,7 @@ $ cataloguer --help
 │ delete-duplicates                             Delete duplicates.                                                                                                                                        │
 │ inspect                                       Inspects a path or a catalogue                                                                                                                            │
 │ move                                          Move files. In case of duplicates will take the shortest name.                                                                                            │
+│ sort                                          Reorganise files in place, applying the format pattern.                                                                                                   │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
